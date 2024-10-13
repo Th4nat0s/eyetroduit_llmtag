@@ -1,0 +1,9 @@
+url: http://url/api/get_ai_job
+urlupd: http://url/mediasview/api_upd_tmedia
+api_key: eyetroduitsapkeyi
+ai_key: openaikey
+count: 1
+CLICKHOUSE: ipofclickhousesvr
+DATABASE: proddb_name
+TABLE: table_name
+log_level: info

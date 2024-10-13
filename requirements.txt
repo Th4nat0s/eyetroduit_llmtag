@@ -1,0 +1,6 @@
+rich==12.5.1
+requests
+openai==0.28
+pyaml
+tiktoken
+clickhouse-driver
