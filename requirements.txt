@@ -4,3 +4,4 @@ openai==0.28
 pyaml
 tiktoken
 clickhouse-driver
+inflect

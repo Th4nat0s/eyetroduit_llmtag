@@ -12,11 +12,12 @@ from utils.meta import print_meta
 from pathlib import Path
 import os
 import re
+import inflect
 
 # Ajouter le chemin du projet à PYTHONPATH
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-
+plu = inflect.engine()
 
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
 config_file_path = THIS_DIR + '/config.yaml'  # Remplace par le chemin vers ton fichier YAML
@@ -36,14 +37,13 @@ logging.basicConfig(
 logger = logging.getLogger("media_downloader")
 
 
-
 openai.api_key = config.get('ai_key')
 
 BAD_LBL = ["likes", "active", "cyber", "Awarene"]
 
 # Reclassification manuelle des label
 REP_LBL = {"advertisement": ["spam", "pub", "ads", "ad", "advertisementvertisement", "promotions", "marketing", "advertising"],
-           "ddos": ["tcp"], 
+           "ddos": ["tcp", "flood"], 
            "testimonial": ["vouch"],
            "credsdumps": ["combos", "datatheft", "credentials", "theft", "accounts", "informati", "Acce", "creds_dumps" ],
            "trolling": ["cha"],
@@ -53,7 +53,8 @@ REP_LBL = {"advertisement": ["spam", "pub", "ads", "ad", "advertisementvertiseme
            "cyberattack" : ["cyberwar", "defacement", "breaches", "cyberwarfare", "cybercrime"],
            "hacktivism": ["cyberunity", "cyberjihad", "opterrorism", "ilent_cyber_force", "hacktivist"],
            "opindia": ["op_india"],
-           "databreach": ["data_breach"]
+           "databreach": ["data_breach"],
+           "propaganda": ["opinis"]
           }
 
 
@@ -90,7 +91,7 @@ justif_query = '''
         give an explanation of what you have see in the text.
 
         Take the following in consideration
-        label Credsdumps should be true only if credentials are directly available in the chat, of if file name suggests a dataleak file.
+        label credsdumps should be true only if credentials are directly available in the chat, of if file name suggests a dataleak file.
         label hacking_claim should be true only if a hacking against a identified victim is available and revendicated by the attacker.
         label carding should be true only if there is cc exchange or any comments on how to steal CC.
         label law_enforcement to true, only if it's an channel maintained by law enforcement talking about their actions.
@@ -124,6 +125,12 @@ def reclassify_labels(labels, mapping):
                 break  # On sort de la boucle interne une fois la correspondance trouvée
     return labels
 
+def pluriel(mot):
+    # Liste d'acronymes ou de termes techniques à traiter comme exceptions
+    acronymes = ["ddos", "credsdumps"]  # Mots invariables
+    if mot.lower() in acronymes:
+        return mot 
+    return plu.plural(mot)
 
 
 def json2markdown(data):
@@ -170,6 +177,8 @@ def fix_ai(result, question):
     result = result.strip('```json').strip('```').strip()  # cette merde comprends pas que je veux un putain de json juste
     result = result.replace("\n", ",")  # si des \n , on mets des ,  , defois cette bouse mets du texte au lieux des labels.
     result = result.split(',')  # String to array
+    logger.info(f"Initials labels : {result}")
+
     result = [item.strip() for item in result] # remove spaces
     result = [re.sub(r'^\d+\. ', '', label) for label in result]  # vire les 1. xxx 2. XX qui lui prends défois.
     result = list(set(result)) # be sure of uniqueness
@@ -177,7 +186,6 @@ def fix_ai(result, question):
     result = [re.sub(r'[^a-zA-Z0-9_]', '_', label.strip()) for label in result]  # on vire ce qui est pas ascii.
     result = clean_underscores(result)
 
-    logger.info(f"Initials labels : {result}")
     result = [item for item in result if item not in BAD_LBL] # Block some labels
     # Réducteur de créativité 
     result = reclassify_labels( result, REP_LBL)
@@ -195,6 +203,9 @@ def fix_ai(result, question):
         if not contains_ddos:
             logger.warning("Hallucination on DDOS")
             result.remove("ddos")
+
+    #result = [ plu.singular_noun(item) for item in result]
+    result = [ pluriel(item) for item in result]
 
     result = list(set(result)) # be sure of uniqueness
     return(sorted(result))
