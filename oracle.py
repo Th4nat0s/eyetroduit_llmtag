@@ -13,6 +13,7 @@ from pathlib import Path
 import os
 import re
 import inflect
+import yaml
 
 # Ajouter le chemin du projet à PYTHONPATH
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
@@ -41,21 +42,25 @@ openai.api_key = config.get('ai_key')
 
 BAD_LBL = ["likes", "active", "cyber", "Awarene"]
 
+
+
+# Fonction pour tout mettre en minusteule le dedup
+def minuscule_dedup(data):
+    if isinstance(data, dict):
+        return {k.lower(): minuscule_dedup(v) for k, v in data.items()}
+    elif isinstance(data, list):
+        return [minuscule_dedup(item) for item in data]
+    elif isinstance(data, str):
+        return data.lower()
+    else:
+        return data
+
 # Reclassification manuelle des label
-REP_LBL = {"advertisement": ["spam", "pub", "ads", "ad", "advertisementvertisement", "promotions", "marketing", "advertising"],
-           "ddos": ["tcp", "flood"], 
-           "testimonial": ["vouch"],
-           "credsdumps": ["combos", "datatheft", "credentials", "theft", "accounts", "informati", "Acce", "creds_dumps" ],
-           "trolling": ["cha"],
-           "hosting": ["kyc"],
-           "proxies": ["proxie", "proxiess"],
-           "anonymous": ["anonymou"],
-           "cyberattack" : ["cyberwar", "defacement", "breaches", "cyberwarfare", "cybercrime"],
-           "hacktivism": ["cyberunity", "cyberjihad", "opterrorism", "ilent_cyber_force", "hacktivist"],
-           "opindia": ["op_india"],
-           "databreach": ["data_breach"],
-           "propaganda": ["opinis"]
-          }
+# Charger le fichier YAML
+with open('dedup_words.yaml', 'r') as yaml_file:
+    REP_LBL = yaml.safe_load(yaml_file)
+    REP_LBL = minuscule_dedup(REP_LBL)
+
 
 
 # La question pour la qualification initiale
