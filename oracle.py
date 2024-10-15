@@ -45,13 +45,15 @@ BAD_LBL = ["likes", "active", "cyber", "Awarene"]
 REP_LBL = {"advertisement": ["spam", "pub", "ads", "ad", "advertisementvertisement", "promotions", "marketing", "advertising"],
            "ddos": ["tcp"], 
            "testimonial": ["vouch"],
-           "credsdumps": ["combos", "datatheft", "credentials", "theft", "accounts", "informati", "Acce" ],
+           "credsdumps": ["combos", "datatheft", "credentials", "theft", "accounts", "informati", "Acce", "creds_dumps" ],
            "trolling": ["cha"],
            "hosting": ["kyc"],
-           "proxies": ["proxie", "proxies"],
+           "proxies": ["proxie", "proxiess"],
            "anonymous": ["anonymou"],
            "cyberattack" : ["cyberwar", "defacement", "breaches", "cyberwarfare", "cybercrime"],
-           "hacktivism": ["cyberunity", "cyberjihad", "opterrorism"]
+           "hacktivism": ["cyberunity", "cyberjihad", "opterrorism", "ilent_cyber_force", "hacktivist"],
+           "opindia": ["op_india"],
+           "databreach": ["data_breach"]
           }
 
 
@@ -153,6 +155,15 @@ def poser_question(context, query):
     )
     return response.choices[0].message['content'].strip()
 
+def clean_underscores(arr):
+    # Traise les __ devant a la fin...
+    result = []
+    for item in arr:
+        cleaned_item = re.sub(r'^_+|_+$', '', item)  # Enlève les _ du début et de la fin
+        cleaned_item = re.sub(r'_+', '_', cleaned_item)  # sed les __ en un \_
+        if cleaned_item:  # Vire les ____ 
+            result.append(cleaned_item)
+    return result
 
 def fix_ai(result, question):
     result = result.lower()     # Lowercase convesion
@@ -164,6 +175,7 @@ def fix_ai(result, question):
     result = list(set(result)) # be sure of uniqueness
     result = [item for item in result if not " " in item] # vire les truc a space
     result = [re.sub(r'[^a-zA-Z0-9_]', '_', label.strip()) for label in result]  # on vire ce qui est pas ascii.
+    result = clean_underscores(result)
 
     logger.info(f"Initials labels : {result}")
     result = [item for item in result if item not in BAD_LBL] # Block some labels
@@ -173,9 +185,10 @@ def fix_ai(result, question):
     # Fix hallucination.
     if "ddos" in result:
         ddos_lbl = [ "ddos", "flood", "check-host" ]
+        lquestion = question.lower()
         contains_ddos = False
         for word in ddos_lbl:
-            if word in question:
+            if word in lquestion:
                 contains_ddos = True
                 logger.info("No hallucination on DDOS")
                 break
@@ -294,17 +307,14 @@ def do_oracle(chan_id):
     try:
         json_data = json.loads(result)
     except json.JSONDecodeError as e:
-        logger.error(f"Error on {e}, with {result}") 
-        #result = poser_question(query, question)  # ce débile a surement pas répondu un json.. on retente...
-        #result = result.strip('```json').strip('```').strip()  # cette merde comprends pas que je veux un putain de json juste
-        #json_data = json.loads(result)
+        raise ValueError("L'AI est trop conne pour pondre un JSON dans 100% des cas")
 
 
     # Filter keywords based on the match status
     filtered_keywords = [
         keyword for keyword in keywords
         if json_data["keyword_classifications"].get(keyword, {}).get("match", False)
-        ]
+            ]
 
     
 

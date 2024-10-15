@@ -77,8 +77,19 @@ def post_data(tags, markdown, uri):
 def ask_oracle(jobs):
     for line in jobs:
         logger.info(f"do_oracle {line[0]}")
-        tags, markdown = do_oracle(line[0])
-        post_data(tags, markdown, line[1])
+        try:
+            tags, markdown = do_oracle(line[0])
+            post_data(tags, markdown, line[1])
+        except ValueError:
+            logger.warning(f"L'oracle a merdé... try again")
+            try:    
+                tags, markdown = do_oracle(line[0])
+                post_data(tags, markdown, line[1])
+            except ValueError: 
+                logger.warning(f"L'oracle a merdé... see you next time")
+        except openai.error.APIError as e:
+            logger.warning(f"API Error {e}")
+
 
 
 # Main Code #####
