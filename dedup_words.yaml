@@ -1,5 +1,6 @@
 advertising:
 - advertisement
+- advertisements
 - spam
 - pub
 - ads
@@ -14,6 +15,12 @@ advertising:
 - promotion
 anonymous:
 - anonymou
+- anonymouscambodias
+- anonymousdz
+- anonymousdzzes
+- anonymouses
+- anons
+- anon
 credsdumps:
 - acces
 - access
@@ -78,6 +85,8 @@ hacktivism:
 - opterrorism
 - ilent_cyber_force
 - hacktivist
+- activism
+- activisms
 hacking_claims:
 - hacking_claim
 hosting:
