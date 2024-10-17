@@ -41,6 +41,7 @@ credsdumps:
 - credential
 - creds_dumps
 - theft
+- uhqs
 - accounts
 - informati
 - Acce
@@ -64,8 +65,16 @@ cyberattacks:
 - cyberbattles
 - cyberop
 - cyberops
+- webshell
+- webshells
 ddos:
 - tcp
+- tcp_bypass
+- tcp_bypasses
+- tcp_paping
+- tcp_papings
+- udp_mix
+- udp_mixes
 - flood
 - floods
 - check-host
@@ -74,6 +83,7 @@ ddos:
 - httpflood
 - ovhtcp
 - tcpbypass
+- stresser
 doxxing:
 - dox
 gambling:
