@@ -132,7 +132,7 @@ def reclassify_labels(labels, mapping):
 
 def pluriel(mot):
     # Liste d'acronymes ou de termes techniques à traiter comme exceptions
-    acronymes = ["ddos", "credsdumps"]  # Mots invariables
+    acronymes = list(REP_LBL.keys())  # les mots definis dans la base tu touche PAS
     if mot.lower() in acronymes:
         return mot 
     return plu.plural(mot)
@@ -184,10 +184,11 @@ def fix_ai(result, question):
     result = result.split(',')  # String to array
     logger.info(f"Initials labels : {result}")
 
-    result = [item.strip() for item in result] # remove spaces
+    result = [item.replace("*", "") for item in result] # défois il s'enflamme a me montrer une label importante "**label**" 
+    result = [item.strip() for item in result] # remove spaces around
     result = [re.sub(r'^\d+\. ', '', label) for label in result]  # vire les 1. xxx 2. XX qui lui prends défois.
     result = list(set(result)) # be sure of uniqueness
-    result = [item for item in result if not " " in item] # vire les truc a space
+    result = [item for item in result if not " " in item] # vire les labels avec un espace dedans truc a space
     result = [re.sub(r'[^a-zA-Z0-9_]', '_', label.strip()) for label in result]  # on vire ce qui est pas ascii.
     result = clean_underscores(result)
 
@@ -217,6 +218,9 @@ def fix_ai(result, question):
 
 
 def fetch_messages(chan_id, count):
+    # Get messages from the clickhouse DB
+    # Return an list (formatted messages, document count, messages count )
+    
     # Connexion à la base de données ClickHouse
     # client = clickhouse_connect.get_client(host=CLICKHOUSE, port=9000) # 8123)  # 9000)
     client = Client(host=config.get("CLICKHOUSE"), port=9000) # 8123)  # 9000)
@@ -238,7 +242,7 @@ def fetch_messages(chan_id, count):
     messages = result # .result_rows
 
     if len(messages) == 0:
-        return "but since No telegram message, return the label 'Empty' "
+        return ("The telegram channel is empty, no messages available", 0, 0)
 
     # Construire la chaîne de texte avec "Someone wrote:\n" ou "file attached : {document_name}" si un document est présent
     formatted_result = ""
@@ -284,6 +288,11 @@ def do_oracle(chan_id):
     # Exemple d'appel de la fonction avec un chan_id donné
     i= 250
     question, documents, lenquestion = fetch_messages(chan_id, i)
+    if lenquestion==0:
+        # No messages retrieved 
+        logger.warning(f"No usable messages in database")
+        return(["ai_low_token", "empty"], "### Not enough data for LLM analysis")
+
     token_count = estimate_tokens(question)
     logger.info(f"Token for 250 msg: {token_count}")
     pmt = token_count / 250
@@ -332,7 +341,6 @@ def do_oracle(chan_id):
         if json_data["keyword_classifications"].get(keyword, {}).get("match", False)
             ]
 
-    
 
     logger.info(result)
     logger.info(filtered_keywords)
